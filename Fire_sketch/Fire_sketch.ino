@@ -4,6 +4,7 @@
 // Compiled size for Arduino/AVR is about 3,968 bytes.
 
 #include <FastLED.h>
+#include <math.h>
 
 #define LED_PIN     5
 #define COLOR_ORDER GRB
@@ -20,6 +21,10 @@
 
 //Rangefinder Pin
 #define rangePin 3
+#define LED_PER_CM 1.44 //???? measure this
+#define FOLLOW_HUE 150 //defines the hue of the follow pattern
+#define FOLLOW_SAT 255//defines the saturation of follow pattern
+#define EXTRA_OFF 50  //LEDS on either side of pattern to check to make sure they are off if needed.
 
 CRGB leds[NUM_LEDS];
 
@@ -54,7 +59,8 @@ void patternOne(){ //fire pattern
 
 void patternTwo(){
   //Rangefinding Algo
-  getRange();
+  int middle = calcMidLED(getRange()); //get the midLED in follow pattern;
+  makeFollowPattern(middle);
 }
 
 void patternThree(){
@@ -77,6 +83,7 @@ void loop()
 #endif  ﻿
 }
 
+//Function to get the range of an object from the rangefinder (in CM)
 int getRange(){
   int avgRange = 10; //number of readings to take
   int range = 0; //range in centimeters from reader
@@ -88,11 +95,32 @@ int getRange(){
   return range;
 }
 
+int calcMidLED(int range){
+  int offset = 0; //change to dist from sensor to 1st LED
+  range -= offset;
+  return range*LED_PER_CM;
+}
 
+void makeFollowPattern(int middle){
+  int tailLength = 10; //Change for num trailing LEDS
+  for(int i = middle - tailLength-EXTRA_OFF; i < middle + tailLength+EXTRA_OFF; i++){
+    if(i < 0 || i > NUM_LEDS||i == middle) continue;
+    if(i == middle){
+      leds[i] = CHSV(FOLLOW_HUE, FOLLOW_SAT, dim8_video(255));
+      continue;
+    }
+    if(i >= middle-tailLength && i <= middle+tailLength){
+          calcFollowLED(i, middle, tailLength); //sets fade of LEDS
+        }else{
+          leds[i].setHSV(0,0,0); //set stray LEDS to black
+        }
+  }
+  FastLED.show();
+}
 
-
-
-
+void calcFollowLED(int i, int middle, int tailLength){
+  leds[i] = CHSV(FOLLOW_HUE, FOLLOW_SAT, dim8_video((1/((middle-i)<<1))*255));
+}
 
 // Fire2012 by Mark Kriegsman, July 2012
 // as part of "Five Elements" shown here: http://youtu.be/knWiGsmgycY
