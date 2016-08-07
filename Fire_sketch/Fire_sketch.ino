@@ -13,20 +13,36 @@
 #define BRIGHTNESS  200
 #define FRAMES_PER_SECOND 60
 
+
+//Switch pins and setups
+#define switchOnePin  1
+#define switchTwoPin  2
+
+//Rangefinder Pin
+#define rangePin 3
+
 CRGB leds[NUM_LEDS];
 
 void setup() {
   delay(3000); // sanity delay
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
   FastLED.setBrightness(BRIGHTNESS);
-
+  pinMode(switchOnePin, INPUT);
+  pinMode(switchTwoPin, INPUT);
+  Serial.begin(9600);
+  pinMode(rangePin, INPUT);
 }
 
 int pickPattern(){
-  return 1;
   //Check switches
-  //return pattern chosen.
-}
+  int switchOneState = digitalRead(switchOnePin);
+  int switchTwoState = digitalRead(switchTwoPin);
+  if(switchOneState == LOW && switchTwoState == LOW) return 0;
+  if(switchOneState == HIGH && switchTwoState == HIGH) return 1;
+  if(switchOneState == LOW && switchTwoState == HIGH) return 2;
+  if(switchOneState == HIGH && switchTwoState == LOW) return 3;
+ }
+
 
 void patternOne(){ //fire pattern
     // Add entropy to random number generator; we use a lot of it.
@@ -37,7 +53,8 @@ void patternOne(){ //fire pattern
 }
 
 void patternTwo(){
-  
+  //Rangefinding Algo
+  getRange();
 }
 
 void patternThree(){
@@ -59,6 +76,22 @@ void loop()
   delay(1000 / FRAMES_PER_SECOND);
 #endif  ﻿
 }
+
+int getRange(){
+  int avgRange = 10; //number of readings to take
+  int range = 0; //range in centimeters from reader
+  for(int i = 0; i < avgRange; i++){
+    range += (pulseIn(rangePin, HIGH)/147);
+    delay(5);
+  }
+  range = (range/10)*2.54; //take avg and scale to cm
+  return range;
+}
+
+
+
+
+
 
 
 // Fire2012 by Mark Kriegsman, July 2012
