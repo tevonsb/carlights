@@ -65,6 +65,7 @@
   }
   
   void patternThree(){
+    //Third undecided Pattern, ideas?
     
   }
   
