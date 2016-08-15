@@ -1,3 +1,5 @@
+#include <Scheduler.h>
+
   // Fire2012: a basic fire simulation for a one-dimensional string of LEDs
   // Mark Kriegsman, July 2012.
   //
@@ -25,6 +27,9 @@
   #define FOLLOW_HUE 150 //defines the hue of the follow pattern
   #define FOLLOW_SAT 255//defines the saturation of follow pattern
   #define EXTRA_OFF 50  //LEDS on either side of pattern to check to make sure they are off if needed.
+
+  Scheduler scheduler = Scheduler();
+  int currPattern = 1;
   
   CRGB leds[NUM_LEDS];
   
@@ -37,31 +42,48 @@
     pinMode(13, OUTPUT);
     Serial.begin(9600);
     pinMode(rangePin, INPUT);
+    pickPattern(); //initial pattern
   }
   
-  int pickPattern(){
+  void pickPattern(){
     //Check switches
+    scheduler.schedule(pickPattern(), 1000);
     int switchOneState = digitalRead(switchOnePin);
     int switchTwoState = digitalRead(switchTwoPin);
-    if(switchOneState == LOW && switchTwoState == LOW) return 0;
-    if(switchOneState == HIGH && switchTwoState == HIGH) return 1;
-    if(switchOneState == LOW && switchTwoState == HIGH) return 2;
-    if(switchOneState == HIGH && switchTwoState == LOW) return 3;
+    if(switchOneState == LOW && switchTwoState == LOW){
+      currPattern = 0;
+    } 
+    if(switchOneState == HIGH && switchTwoState == HIGH){
+      currPattern = 1;
+    }
+    if(switchOneState == LOW && switchTwoState == HIGH){
+      currPattern = 2;
+    } 
+    if(switchOneState == HIGH && switchTwoState == LOW){
+      currPattern = 3;
+    }
    }
   
   
   void patternOne(){ //fire pattern
       // Add entropy to random number generator; we use a lot of it.
+    int prevPattern = currPattern;
+    while(prevPattern = currPattern){
     random16_add_entropy(random());
     
     Fire2012(); // run simulation frame
     FastLED.show(); // display this frame
   }
+  }
   
   void patternTwo(){
     //Rangefinding Algo
+    int prevPattern = currPattern;
+    while(prevPattern = currPattern){
+    scheduler.update();
     int middle = calcMidLED(getRange()); //get the midLED in follow pattern;
     makeFollowPattern(middle);
+    }
   }
   
   void patternThree(){
@@ -71,7 +93,8 @@
   
   void loop()
   {
-    switch(pickPattern()){
+    pickPattern();
+    switch(currPattern){
       case 1: patternOne();
       case 2: patternTwo();
       case 3: patternThree();
